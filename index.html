@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartFocus</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="main-container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>SmartFocus</h1>
+    <label>🔊 Sound <input type="checkbox" id="soundToggle" checked></label>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><span id="topScore">0</span>🔥 Top</div>
+    <div class="stat"><span id="avgScore">0</span>⚡ Avg</div>
+    <div class="stat"><span id="taskCount">0</span>📊 Tasks</div>
+    <div class="stat"><span id="doneCount">0</span>✅ Done</div>
+    <div class="stat"><span id="remainingCount">0</span>⏳ Left</div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="task-input">
+    <input id="taskInput" placeholder="New task">
+
+    <!-- URGENCY -->
+    <div class="slider-group">
+      <label>Urgency</label>
+      <input type="range" id="urgency" min="1" max="10" value="5">
+      <div class="slider-labels"><span>Low</span><span>Medium</span><span>High</span></div>
+    </div>
+
+    <!-- IMPACT -->
+    <div class="slider-group">
+      <label>Impact</label>
+      <input type="range" id="impact" min="1" max="10" value="5">
+      <div class="slider-labels"><span>Low</span><span>Medium</span><span>High</span></div>
+    </div>
+
+    <select id="category">
+      <option>Work</option>
+      <option>Study</option>
+      <option>Health</option>
+      <option>Other</option>
+    </select>
+
+    <button id="addTaskBtn">Add</button>
+  </div>
+
+  <!-- TASK LIST -->
+  <ul id="taskList" class="task-list"></ul>
+
+  <!-- DEEP WORK -->
+  <div class="deep-work">
+    <h2>Deep Work Mode</h2>
+    <span id="focusTask">No task selected</span>
+    <span id="timer">00:00</span>
+    <div>
+      <button id="startFocus">Start</button>
+      <button id="pauseFocus">Pause</button>
+      <button id="resumeFocus">Resume</button>
+      <button id="stopFocus">Stop</button>
+    </div>
+  </div>
+
+  <!-- CHART -->
+  <svg id="chart" width="300" height="300"></svg>
+
+  <!-- REPORT -->
+  <div class="ai-report">
+    <span id="reportText">Start focusing to unlock insights.</span>
+  </div>
+
+  <!-- SOUNDS -->
+  <audio id="popSound" src="echo-pop.mp3"></audio>
+  <audio id="clickSound" src="click sound.mp3"></audio>
+
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
