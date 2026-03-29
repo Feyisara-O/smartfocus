@@ -35,6 +35,9 @@ SmartFocus is a productivity dashboard designed to help users prioritize tasks, 
 
 Optional: Place your sound files (`pop.mp3`, `click.mp3`) in the `assets` folder or update the HTML `<audio>` elements.
 
+## View Demo 
+https://feyisara-o.github.io/smartfocus/
+
 ## Tech Stack
 - HTML5 for structure and semantic markup
 - CSS3 for styling, responsive layout, and Dark Glassmorphism
