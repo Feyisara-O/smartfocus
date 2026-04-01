@@ -1,5 +1,5 @@
 /* ==============================
-   SMARTFOCUS FINAL (INTELLIGENT INSIGHT)
+   SMARTFOCUS FINAL
 ============================== */
 
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
@@ -7,8 +7,9 @@ let activeTaskId = null;
 let timer = null;
 let seconds = 0;
 let soundEnabled = true;
+let isRunning = false;
 
-/* DOM ELEMENTS */
+/* DOM */
 const taskList = document.getElementById("taskList");
 const timerEl = document.getElementById("timer");
 const focusTaskEl = document.getElementById("focusTask");
@@ -24,6 +25,10 @@ const popSound = document.getElementById("popSound");
 const clickSound = document.getElementById("clickSound");
 const soundToggle = document.getElementById("soundToggle");
 
+const startBtn = document.getElementById("startFocus");
+const pauseBtn = document.getElementById("pauseFocus");
+const stopBtn = document.getElementById("stopFocus");
+
 /* -----------------------------
    SOUND TOGGLE
 ------------------------------ */
@@ -31,47 +36,41 @@ soundToggle.addEventListener("change", () => {
   soundEnabled = soundToggle.checked;
 });
 
+function playSound(audio) {
+  if (!soundEnabled) return;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+}
+
 /* -----------------------------
-   SAVE TASKS
+   LOCAL STORAGE
 ------------------------------ */
 function save() {
   localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
 /* -----------------------------
-   CALCULATE TASK SCORE
+   SCORE CALCULATION
 ------------------------------ */
 function calculateScore(u, i) {
   return Math.round((u / 10) * 50 + (i / 10) * 50);
 }
 
 /* -----------------------------
-   INTELLIGENT INSIGHT
+   INSIGHT SYSTEM
 ------------------------------ */
 function updateInsight() {
   if (!tasks.length) {
     reportEl.textContent = "Add a task to begin.";
     return;
   }
+  const highest = tasks.reduce((max,t)=> t.score>max.score ? t : max, tasks[0]);
+  const remaining = tasks.filter(t=>!t.completed).length;
 
-  const remainingTasks = tasks.filter(t => !t.completed);
-  if (!remainingTasks.length) {
-    reportEl.textContent = "All tasks completed! 🎉";
-    return;
-  }
-
-  const highest = remainingTasks.reduce((max, t) => t.score > max.score ? t : max, remainingTasks[0]);
-  const activeTask = tasks.find(t => t.id === activeTaskId);
-
-  if (activeTask) {
-    if (activeTask.score < highest.score) {
-      reportEl.textContent = `⚠️ You're working on "${activeTask.title}" while ignoring higher-value task "${highest.title}"`;
-    } else {
-      reportEl.textContent = `🔥 Good job! You're focusing on high-value task "${activeTask.title}"`;
-    }
-  } else {
-    reportEl.textContent = "Pick a task and start focusing.";
-  }
+  if (remaining > 5) reportEl.textContent = "🧠 Too many tasks. Focus on completing one.";
+  else if (activeTaskId && highest.id !== activeTaskId) reportEl.textContent = `⚠️ You are ignoring: "${highest.title}"`;
+  else if (activeTaskId) reportEl.textContent = "🔥 You're working on a high-value task.";
+  else reportEl.textContent = "Pick a task and start focusing.";
 }
 
 /* -----------------------------
@@ -92,30 +91,33 @@ document.getElementById("addTaskBtn").onclick = () => {
     category: document.getElementById("category").value,
     score: calculateScore(urgency, impact),
     completed: false,
-    timeSpent: 0
+    timeSpent: 0 // stored in seconds
   });
 
   save();
   render();
-
-  if (soundEnabled) {
-    clickSound.currentTime = 0;
-    clickSound.play();
-  }
+  playSound(clickSound);
 };
 
 /* -----------------------------
    RENDER TASKS
 ------------------------------ */
+function formatTime(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  return (h>0?(h<10?"0":"")+h+":":"")+(m<10?"0":"")+m+":"+(s<10?"0":"")+s;
+}
+
 function render() {
   taskList.innerHTML = "";
 
-  const sorted = [...tasks].sort((a, b) => {
-    if (a.completed !== b.completed) return a.completed - b.completed;
+  const sorted = [...tasks].sort((a,b)=>{
+    if(a.completed !== b.completed) return a.completed - b.completed;
     return b.score - a.score;
   });
 
-  sorted.forEach(task => {
+  sorted.forEach(task=>{
     const li = document.createElement("li");
     li.className = "task-item";
 
@@ -123,7 +125,7 @@ function render() {
       <div>
         <input type="checkbox" data-id="${task.id}" ${task.completed ? "checked":""}>
         <span class="${task.completed?"done":""}">
-          ${task.title} (${task.category}) - ${task.timeSpent}s
+          ${task.title} (${task.category}) - ${formatTime(task.timeSpent)}
         </span>
       </div>
       <div>
@@ -132,11 +134,11 @@ function render() {
       </div>
     `;
 
-    li.onclick = (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+    li.onclick = (e)=>{
+      if(e.target.tagName==="INPUT"||e.target.tagName==="BUTTON") return;
       activeTaskId = task.id;
       focusTaskEl.textContent = task.title;
-      updateInsight(); // Real-time update
+      updateInsight();
     };
 
     taskList.appendChild(li);
@@ -154,18 +156,18 @@ function updateStats() {
   const total = tasks.length;
   taskCountEl.textContent = total;
 
-  if (!total) {
-    topScoreEl.textContent = 0;
-    avgScoreEl.textContent = 0;
-    doneCountEl.textContent = 0;
-    remainingCountEl.textContent = 0;
+  if(!total){
+    topScoreEl.textContent=0;
+    avgScoreEl.textContent=0;
+    doneCountEl.textContent=0;
+    remainingCountEl.textContent=0;
     return;
   }
 
-  topScoreEl.textContent = Math.max(...tasks.map(t => t.score));
-  avgScoreEl.textContent = Math.round(tasks.reduce((s, t) => s + t.score, 0) / total);
+  topScoreEl.textContent = Math.max(...tasks.map(t=>t.score));
+  avgScoreEl.textContent = Math.round(tasks.reduce((s,t)=>s+t.score,0)/total);
 
-  const done = tasks.filter(t => t.completed).length;
+  const done = tasks.filter(t=>t.completed).length;
   doneCountEl.textContent = done;
   remainingCountEl.textContent = total - done;
 }
@@ -173,74 +175,74 @@ function updateStats() {
 /* -----------------------------
    COMPLETE / DELETE TASK
 ------------------------------ */
-taskList.addEventListener("change", e => {
-  if (e.target.type === "checkbox") {
+taskList.addEventListener("change", e=>{
+  if(e.target.type==="checkbox"){
     const id = +e.target.dataset.id;
-    tasks = tasks.map(t => t.id === id ? { ...t, completed: e.target.checked } : t);
+    tasks = tasks.map(t=>t.id===id ? {...t, completed:e.target.checked}:t);
     save();
 
-    if (e.target.checked) {
-      confetti(e.target); // Confetti from checkbox
-      if (soundEnabled) {
-        popSound.currentTime = 0;
-        popSound.play();
-      }
+    if(e.target.checked){
+      playSound(popSound);
+      confettiFromCheckbox(e.target);
     }
 
-    updateInsight();
     render();
   }
 });
 
-taskList.addEventListener("click", e => {
-  const deleteBtn = e.target.closest("[data-delete]");
-  if (!deleteBtn) return;
-
-  const id = +deleteBtn.dataset.delete;
-  tasks = tasks.filter(t => t.id !== id);
-  save();
-  render();
-
-  if (soundEnabled) {
-    clickSound.currentTime = 0;
-    clickSound.play();
+taskList.addEventListener("click", e=>{
+  if(e.target.dataset.delete){
+    tasks = tasks.filter(t=>t.id != e.target.dataset.delete);
+    save();
+    render();
+    playSound(clickSound);
   }
 });
 
 /* -----------------------------
-   TIMER
+   TIMER UTILS
 ------------------------------ */
-function updateTimer() {
+function updateTimer(){
   seconds++;
-  timerEl.textContent = seconds + "s";
+  timerEl.textContent = formatTime(seconds);
 }
 
-document.getElementById("startFocus").onclick = () => {
-  if (!activeTaskId || timer) return;
+/* -----------------------------
+   TIMER BUTTONS
+------------------------------ */
+startBtn.onclick = () => {
+  if (!activeTaskId || isRunning) return;
   seconds = 0;
   timer = setInterval(updateTimer, 1000);
+  isRunning = true;
+  pauseBtn.textContent = "Pause";
   updateInsight();
 };
 
-document.getElementById("pauseFocus").onclick = () => {
-  clearInterval(timer);
-  timer = null;
+pauseBtn.onclick = () => {
+  if (!activeTaskId) return;
+  if (isRunning) {
+    clearInterval(timer);
+    timer = null;
+    isRunning = false;
+    pauseBtn.textContent = "Resume";
+  } else {
+    timer = setInterval(updateTimer, 1000);
+    isRunning = true;
+    pauseBtn.textContent = "Pause";
+  }
 };
 
-document.getElementById("resumeFocus").onclick = () => {
-  if (timer) return;
-  timer = setInterval(updateTimer, 1000);
-};
-
-document.getElementById("stopFocus").onclick = () => {
+stopBtn.onclick = () => {
   clearInterval(timer);
   timer = null;
+  isRunning = false;
 
-  const task = tasks.find(t => t.id === activeTaskId);
-  if (task) task.timeSpent += seconds;
+  const task = tasks.find(t=>t.id===activeTaskId);
+  if(task) task.timeSpent += seconds;
 
-  seconds = 0;
-  timerEl.textContent = "00:00";
+  seconds=0;
+  timerEl.textContent="00:00";
 
   save();
   render();
@@ -249,45 +251,45 @@ document.getElementById("stopFocus").onclick = () => {
 /* -----------------------------
    PIE CHART
 ------------------------------ */
-function drawChart() {
+function drawChart(){
   const svg = document.getElementById("chart");
   svg.innerHTML = "";
 
   const categoryTime = {};
-  tasks.forEach(t => {
-    categoryTime[t.category] = (categoryTime[t.category] || 0) + t.timeSpent;
+  tasks.forEach(t=>{
+    categoryTime[t.category]=(categoryTime[t.category]||0)+t.timeSpent;
   });
 
-  const total = Object.values(categoryTime).reduce((a, b) => a + b, 0);
-  if (!total) return;
+  const total = Object.values(categoryTime).reduce((a,b)=>a+b,0);
+  if(!total) return;
 
   let start = 0;
   const colors = ["#00E5BC","#30d158","#ffd60a","#ff453a","#ff9f0a"];
 
-  Object.entries(categoryTime).forEach(([cat, time], i) => {
-    const angle = (time / total) * 2 * Math.PI;
+  Object.entries(categoryTime).forEach(([cat,time],i)=>{
+    const angle = (time/total)*2*Math.PI;
     const end = start + angle;
 
-    const x1 = 150 + 100 * Math.cos(start);
-    const y1 = 150 + 100 * Math.sin(start);
-    const x2 = 150 + 100 * Math.cos(end);
-    const y2 = 150 + 100 * Math.sin(end);
+    const x1 = 150 + 100*Math.cos(start);
+    const y1 = 150 + 100*Math.sin(start);
+    const x2 = 150 + 100*Math.cos(end);
+    const y2 = 150 + 100*Math.sin(end);
 
     const path = document.createElementNS("http://www.w3.org/2000/svg","path");
     path.setAttribute("d",`M150,150 L${x1},${y1} A100,100 0 ${angle>Math.PI?1:0},1 ${x2},${y2} Z`);
-    path.setAttribute("fill", colors[i % colors.length]);
+    path.setAttribute("fill",colors[i%colors.length]);
     svg.appendChild(path);
 
-    const mid = start + angle / 2;
-    const tx = 150 + 60 * Math.cos(mid);
-    const ty = 150 + 60 * Math.sin(mid);
+    const mid = start + angle/2;
+    const tx = 150 + 60*Math.cos(mid);
+    const ty = 150 + 60*Math.sin(mid);
 
     const text = document.createElementNS("http://www.w3.org/2000/svg","text");
-    text.setAttribute("x", tx);
-    text.setAttribute("y", ty);
-    text.setAttribute("fill", "#fff");
-    text.setAttribute("font-size", "10");
-    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("x",tx);
+    text.setAttribute("y",ty);
+    text.setAttribute("fill","#fff");
+    text.setAttribute("font-size","10");
+    text.setAttribute("text-anchor","middle");
     text.textContent = cat;
     svg.appendChild(text);
 
@@ -296,19 +298,19 @@ function drawChart() {
 }
 
 /* -----------------------------
-   CONFETTI FROM CHECKBOX
+   CONFETTI
 ------------------------------ */
-function confetti(source) {
-  const rect = source.getBoundingClientRect();
-  for (let i = 0; i < 30; i++) {
-    const d = document.createElement("div");
-    d.style.position = "fixed";
-    d.style.width = "6px";
-    d.style.height = "6px";
-    d.style.background = ["#00E5BC","#30d158","#ffd60a","#ff453a"][Math.floor(Math.random()*4)];
-    d.style.top = rect.top + "px";
-    d.style.left = (rect.left + rect.width/2) + "px";
-    d.style.animation = "fall 2s linear";
+function confettiFromCheckbox(el){
+  const rect = el.getBoundingClientRect();
+  for(let i=0;i<30;i++){
+    const d=document.createElement("div");
+    d.style.position="fixed";
+    d.style.width="6px";
+    d.style.height="6px";
+    d.style.background=["#00E5BC","#30d158","#ffd60a","#ff453a"][Math.floor(Math.random()*4)];
+    d.style.top=rect.top + "px";
+    d.style.left=rect.left + "px";
+    d.style.animation="fall 2s linear";
     document.body.appendChild(d);
     setTimeout(()=>d.remove(),2000);
   }
@@ -318,14 +320,3 @@ function confetti(source) {
    INIT
 ------------------------------ */
 render();
-
-/* REGISTER SERVICE WORKER*/
-
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registered:', reg))
-      .catch(err => console.error('SW registration failed:', err));
-  });
-}

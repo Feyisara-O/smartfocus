@@ -4,11 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmartFocus</title>
+
   <link rel="stylesheet" href="style.css">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="..icon/icon" sizes="192x192" type="image/png">
-<meta name="theme-color" content="#00E5BC">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#00E5BC">
 </head>
+
 <body>
 
 <div class="main-container">
@@ -63,11 +68,11 @@
   <div class="deep-work">
     <h2>Deep Work Mode</h2>
     <span id="focusTask">No task selected</span>
-    <span id="timer">00:00</span>
+    <span id="timer">00:00:00</span>
+
     <div>
       <button id="startFocus">Start</button>
-      <button id="pauseFocus">Pause</button>
-      <button id="resumeFocus">Resume</button>
+      <button id="pauseFocus">Pause</button> <!-- ✅ NOW TOGGLE -->
       <button id="stopFocus">Stop</button>
     </div>
   </div>
@@ -87,6 +92,7 @@
 </div>
 
 <script src="main.js"></script>
+
 <script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js")
@@ -94,5 +100,6 @@ if ("serviceWorker" in navigator) {
     .catch(err => console.log("SW Registration Failed:", err));
 }
 </script>
+
 </body>
 </html>
